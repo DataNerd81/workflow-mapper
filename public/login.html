@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KubeNest — Sign In</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8f8f8; color: #101828; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+  :root { --p1: #1bafc0; --p2: #6941c6; --p3: #0842c0; --dark: #101828; --white: #ffffff; }
+  .card { background: var(--white); border-radius: 20px; box-shadow: 0 8px 40px rgba(0,0,0,0.08); width: 100%; max-width: 420px; overflow: hidden; }
+  .card-top { background: var(--dark); padding: 32px 32px 28px; text-align: center; position: relative; overflow: hidden; }
+  .card-top .orb { position: absolute; width: 200px; height: 200px; border-radius: 50%; opacity: 0.08; }
+  .card-top .orb1 { background: var(--p1); top: -80px; left: -60px; }
+  .card-top .orb2 { background: var(--p2); bottom: -80px; right: -60px; }
+  .card-top img { height: 32px; margin-bottom: 16px; position: relative; }
+  .card-top h1 { color: var(--white); font-size: 20px; font-weight: 700; position: relative; }
+  .card-top p { color: #94A3B8; font-size: 13px; margin-top: 6px; position: relative; }
+  .card-body { padding: 28px 32px 32px; }
+  .tabs { display: flex; gap: 0; margin-bottom: 24px; background: #F3F4F6; border-radius: 10px; padding: 4px; }
+  .tab { flex: 1; padding: 10px; border-radius: 8px; border: none; background: none; font-family: inherit; font-size: 13px; font-weight: 600; color: #9CA3AF; cursor: pointer; transition: all 0.2s; }
+  .tab.active { background: var(--white); color: var(--dark); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .label { font-size: 11px; letter-spacing: 0.5px; color: #6B7280; margin-bottom: 6px; display: block; text-transform: uppercase; font-weight: 600; }
+  .field { width: 100%; padding: 11px 14px; border-radius: 10px; border: 1px solid #D1D5DB; background: var(--white); color: var(--dark); font-family: inherit; font-size: 14px; outline: none; transition: border-color 0.2s; }
+  .field:focus { border-color: var(--p1); }
+  .group { margin-bottom: 16px; }
+  .btn-primary { width: 100%; padding: 13px; border-radius: 12px; border: none; background: var(--p1); color: var(--white); font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; transition: opacity 0.2s; }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-google { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #E5E7EB; background: var(--white); color: var(--dark); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 16px; transition: background 0.2s; }
+  .btn-google:hover { background: #F9FAFB; }
+  .divider-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .divider-row .line { flex: 1; height: 1px; background: #E5E7EB; }
+  .divider-row span { font-size: 11px; color: #9CA3AF; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+  .error { background: #FEF2F2; border: 1px solid #FECACA; color: #DC2626; border-radius: 10px; padding: 10px 14px; font-size: 13px; margin-bottom: 16px; display: none; }
+  .success { background: #F0FDF4; border: 1px solid #BBF7D0; color: #16A34A; border-radius: 10px; padding: 10px 14px; font-size: 13px; margin-bottom: 16px; display: none; }
+  .forgot { text-align: right; margin-top: -8px; margin-bottom: 16px; }
+  .forgot a { font-size: 12px; color: var(--p1); text-decoration: none; font-weight: 600; }
+  .forgot a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="card-top">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48c3ZnIGlkPSJ1dWlkLTgyM2YwZWRmLWNlYTMtNDQ4MS1iZDZmLWY3NjNhMDJkMmJmMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2aWV3Qm94PSIwIDAgMzE3LjQ4IDUxLjAyNCI+PGRlZnM+PHN0eWxlPi51dWlkLTk2MDMzZDg5LWZhOWUtNGVlNy05Y2ZhLTcxOWJmMjVmOWEzOHtmaWxsOiMxYmFmYzA7fS51dWlkLTU0NmUwYmU2LTBmNmYtNGRiNC1hODk5LTBmZTQ1ZGRmOTFjM3tmaWxsOiNmZmY7fTwvc3R5bGU+PC9kZWZzPjxwYXRoIGNsYXNzPSJ1dWlkLTk2MDMzZDg5LWZhOWUtNGVlNy05Y2ZhLTcxOWJmMjVmOWEzOCIgZD0iTTIuODkxLDQ5LjAwNVYxLjMxaDEzLjkyNnYyMi41NzJMMzEuMjAzLDEuMzFoMTUuMTY2bC0xNS4zMDcsMjIuMjE4LDE1Ljg3NSwyNS40NzdoLTE1LjUyMWwtMTQuNTk5LTI0LjM3OXYyNC4zNzlIMi44OTFaIi8+PHBhdGggY2xhc3M9InV1aWQtOTYwMzNkODktZmE5ZS00ZWU3LTljZmEtNzE5YmYyNWY5YTM4IiBkPSJNNTUuODk4LDQ5LjUwMWMtMy40MjUsMC02LjE4NC0xLjAwNC04LjI3NC0zLjAxMi0yLjA5MS0yLjAwOC0zLjEzNi01LjEzOC0zLjEzNi05LjM5VjE0LjMxNGgxMy4yMTZ2MjEuMTljMCwuODAzLjEzNiwxLjQ4My40MDgsMi4wMzguMjcyLjU1NS42NjguOTc1LDEuMTg3LDEuMjU4LjUxOS4yODQsMS4xNDYuNDI2LDEuODc4LjQyNiwxLjExLDAsMi4xNjctLjI4OSwzLjE3MS0uODY4LDEuMDA0LS41NzgsMS45NTQtMS40MTIsMi44NTMtMi40OThWMTQuMzE0aDEzLjIxNnYzNC42OTFoLTEyLjc1NmwtLjE0Mi00Ljk5N2MtMS4yMjgsMS41NTktMi43MzUsMi44NjUtNC41MTgsMy45MTYtMS43ODQsMS4wNTEtNC4xNTIsMS41NzYtNy4xMDUsMS41NzZaIi8+PHBhdGggY2xhc3M9InV1aWQtOTYwMzNkODktZmE5ZS00ZWU3LTljZmEtNzE5YmYyNWY5YTM4IiBkPSJNMTA0Ljk3Miw0OS42NDNjLTIuMDc3LDAtMy45MDktLjQyLTUuNDkyLTEuMjU4cy0zLjExOS0yLjE1Ni00LjYwNy0zLjk1MWwtLjM1Myw0LjU3MWgtMTIuMzMxVjEuMzFoMTMuMTgxdjE3LjUwNWMxLjI1Mi0xLjYwNiwyLjcxNi0yLjg0LDQuMzk0LTMuNzAzLDEuNjc3LS44NjIsMy42NzItMS4yOTQsNS45ODgtMS4yOTQsMi43NjQsMCw1LjE5OC42NDUsNy4zMDEsMS45MzEsMi4xMDEsMS4yODgsMy43NDQsMy4yNTUsNC45MjQsNS45czEuNzcyLDYuMDM2LDEuNzcyLDEwLjE2OWMwLDQuMDY0LS42NDQsNy40MTItMS45MzEsMTAuMDQ2LTEuMjg4LDIuNjM1LTMuMDQxLDQuNTg5LTUuMjYxLDUuODY1LTIuMjIyLDEuMjc2LTQuNzQ5LDEuOTE0LTcuNTg0LDEuOTE0Wk0xMDEuMjUyLDM5Ljg2M2MxLjYwNywwLDIuODkzLS42NjcsMy44NjMtMi4wMDIuOTY4LTEuMzM0LDEuNDUyLTMuNDMxLDEuNDUyLTYuMjksMC0yLjkyOC0uNDc3LTUuMDE0LTEuNDM1LTYuMjU0LS45NTYtMS4yNC0yLjI0OS0xLjg2MS0zLjg4LTEuODYxLTEuNTEyLDAtMi43ODcuNTAzLTMuODI3LDEuNTA3cy0xLjcyNCwxLjk1NC0yLjA1NSwyLjg1MnY3LjkwMmMuNTIuOTQ1LDEuMjU5LDEuODcyLDIuMjE1LDIuNzgyczIuMTc5LDEuMzY0LDMuNjY3LDEuMzY0WiIvPjxwYXRoIGNsYXNzPSJ1dWlkLTk2MDMzZDg5LWZhOWUtNGVlNy05Y2ZhLTcxOWJmMjVmOWEzOCIgZD0iTTE0MC4zMzMsNDkuNjQzYy0zLjYzOSwwLTYuODkxLS42MzgtOS43NjItMS45MTRzLTUuMTI3LTMuMjYtNi43NjctNS45NTNjLTEuNjQzLTIuNjkzLTIuNDYzLTYuMTQxLTIuNDYzLTEwLjM0NiwwLTMuODAzLjgwMi03LjAwNCwyLjQwOS05LjYwMywxLjYwNy0yLjU5OCwzLjgyMi00LjU3MSw2LjY0NS01LjkxNywyLjgyMS0xLjM0Niw2LjA0LTIuMDIsOS42NTUtMi4wMiw1LjYyMywwLDEwLjA5OCwxLjU2NSwxMy40Myw0LjY5NSwzLjMzMSwzLjEzMSw0Ljk5Niw3LjcwNyw0Ljk5NiwxMy43MzEsMCwuMjM2LS4wMTIuNTQ0LS4wMzQuOTIxLS4wMjUuMzc5LS4wNTkuNjk3LS4xMDcuOTU3aC0yMy44ODNjLjA0OCwxLjE1OC4yNzIsMi4yNDUuNjczLDMuMjYuNDAzLDEuMDE2LDEuMDQ2LDEuODMxLDEuOTMxLDIuNDQ1Ljg4Ny42MTQsMi4wNS45MjIsMy40OTEuOTIyLDEuNTU5LDAsMi44NTItLjI3OCwzLjg4LS44MzMsMS4wMjgtLjU1NSwxLjU3OC0xLjQ3LDEuNjQ4LTIuNzQ2aDEyLjI2MWMtLjE5LDMtMS4wNTgsNS40MDktMi42MDQsNy4yMjktMS41NDcsMS44MTktMy42MzksMy4xMzYtNi4yNzMsMy45NTEtMi42MzMuODE1LTUuNjc1LDEuMjIyLTkuMTIzLDEuMjIyWk0xMzQuNzM0LDI3LjEwN2gxMC43MDJjLS4xMTktMS43NDgtLjcwOC0zLTEuNzcyLTMuNzU3LTEuMDYzLS43NTYtMi4yNjgtMS4xMzQtMy42MTUtMS4xMzQtMS4zNzEsMC0yLjU1OC40Mi0zLjU2LDEuMjU4LTEuMDA2LjgzOS0xLjU5LDIuMDUtMS43NTUsMy42MzNaIi8+PHBhdGggY2xhc3M9InV1aWQtNTQ2ZTBiZTYtMGY2Zi00ZGI0LWE4OTktMGZlNDVkZGY5MWMzIiBkPSJNMTYwLjQ4Miw0OS4wMDVWMS4zMWgxMy40M2wxNy4xODUsMjYuMDc5VjEuMzFoMTMuMDc1djQ3LjY5NWgtMTMuMzU4bC0xNy4zMjgtMjYuMzk5djI2LjM5OWgtMTMuMDAzWiIvPjxwYXRoIGNsYXNzPSJ1dWlkLTU0NmUwYmU2LTBmNmYtNGRiNC1hODk5LTBmZTQ1ZGRmOTFjMyIgZD0iTTIyNC44NDYsNDkuNjQzYy0zLjYzOSwwLTYuODkzLS42MzgtOS43NjQtMS45MTQtMi44NjktMS4yNzYtNS4xMjctMy4yNi02Ljc2Ny01Ljk1My0xLjY0My0yLjY5My0yLjQ2My02LjE0MS0yLjQ2My0xMC4zNDYsMC0zLjgwMy44MDMtNy4wMDQsMi40MS05LjYwMywxLjYwNS0yLjU5OCwzLjgyLTQuNTcxLDYuNjQzLTUuOTE3czYuMDQyLTIuMDIsOS42NTctMi4wMmM1LjYyMSwwLDEwLjA5OCwxLjU2NSwxMy40Myw0LjY5NSwzLjMzMSwzLjEzMSw0Ljk5Niw3LjcwNyw0Ljk5NiwxMy43MzEsMCwuMjM2LS4wMTIuNTQ0LS4wMzYuOTIxLS4wMjQuMzc5LS4wNTkuNjk3LS4xMDUuOTU3aC0yMy44ODNjLjA0NiwxLjE1OC4yNywyLjI0NS42NzMsMy4yNi40MDEsMS4wMTYsMS4wNDUsMS44MzEsMS45MzEsMi40NDUuODg1LjYxNCwyLjA0OS45MjIsMy40OTEuOTIyLDEuNTU5LDAsMi44NTItLjI3OCwzLjg4LS44MzMsMS4wMjgtLjU1NSwxLjU3Ni0xLjQ3LDEuNjQ4LTIuNzQ2aDEyLjI2MWMtLjE5LDMtMS4wNTgsNS40MDktMi42MDYsNy4yMjlzLTMuNjM3LDMuMTM2LTYuMjcxLDMuOTUxYy0yLjYzNS44MTUtNS42NzUsMS4yMjItOS4xMjMsMS4yMjJaTTIxOS4yNDUsMjcuMTA3aDEwLjcwM2MtLjExOS0xLjc0OC0uNzEtMy0xLjc3Mi0zLjc1Ny0xLjA2My0uNzU2LTIuMjY5LTEuMTM0LTMuNjE1LTEuMTM0LTEuMzcxLDAtMi41NTguNDItMy41NjIsMS4yNTgtMS4wMDQuODM5LTEuNTg4LDIuMDUtMS43NTUsMy42MzNaIi8+PHBhdGggY2xhc3M9InV1aWQtNTQ2ZTBiZTYtMGY2Zi00ZGI0LWE4OTktMGZlNDVkZGY5MWMzIiBkPSJNMzAzLjc1MywxOS4wMDd2LTQuNjk3aC02LjU3NVY1LjgwNWgtMTMuMjJ2OC41MDZoLTUuNjcxdjEwLjAzNmg1LjY3MXYxMS42NTRjMCwzLjMyMi40ODcsNS45NDksMS40NzgsNy44MjcuOTkxLDEuODk2LDIuNjk2LDMuMjE4LDUuMTE0LDQuMDAxLDIuNC43ODMsNS43NCwxLjE4MywxMC4wMTksMS4xODNoMy4wNDR2LTYuODAxYy01LjMyMy0xLjE2NS05LjMwNi01LjkzMS05LjMwNi0xMS41ODQsMC01LjcyMyw0LjA1My0xMC41MDYsOS40NDUtMTEuNjE5WiIvPjxwYXRoIGNsYXNzPSJ1dWlkLTU0NmUwYmU2LTBmNmYtNGRiNC1hODk5LTBmZTQ1ZGRmOTFjMyIgZD0iTTI3Ni41MjEsMzIuNDc1Yy0uOTU2LTEuMzU4LTIuMzEtMi40MzItNC4wNTgtMy4yMjRzLTMuODM5LTEuNDgyLTYuMjcxLTIuMDczYy0yLjUyOC0uNjM4LTQuNDIzLTEuMTc1LTUuNjg3LTEuNjEycy0yLjA5Ni0uODItMi40OTktMS4xNTJjLS40MDEtLjMzLS42MDEtLjY1LS42MDEtLjk1NywwLS41MTkuMzA2LS45MDMuOTIxLTEuMTUxLjYxMy0uMjQ5LDEuNDY0LS4zNzMsMi41NTEtLjM3MywxLjA2MywwLDEuOTQ4LjIxMywyLjY1Ny42MzguNjUuMzg5Ljk4Ni45ODcsMS4wNDEsMS43NzJoMTEuOTg4Yy0uMDMtMi4wMDQtLjQ2My0zLjY4Ni0xLjMxNy01LjAzMS0uODg3LTEuMzk0LTIuMDc5LTIuNDkyLTMuNTc5LTMuMjk1LTEuNS0uODAzLTMuMTk1LTEuMzctNS4wODYtMS43MDEtMS44ODktLjMzLTMuODM5LS40OTYtNS44NDUtLjQ5Ni0xLjg2NywwLTMuNzM5LjE1NS01LjYxNy40NjEtMS44NzcuMzA3LTMuNTk2LjgzOC01LjE1NSwxLjU5NC0xLjU1OS43NTctMi44MTEsMS44MjUtMy43NTYsMy4yMDctLjk0NiwxLjM4Mi0xLjQxOCwzLjE1OS0xLjQxOCw1LjMzMywwLDIuMzg3LjYwOCw0LjMyOSwxLjgyNiw1LjgyOSwxLjIxNiwxLjUwMSwyLjgwNCwyLjY3NSw0Ljc2NSwzLjUyNiwxLjk2Mi44NSw0LjA2MywxLjUyNCw2LjMwOSwyLjAyLDMuMDQ3LjY4NSw1LjA1MywxLjI1Myw2LjAyMywxLjcwMS45NjguNDQ4LDEuNDUyLDEuMDc1LDEuNDUyLDEuODc4LDAsLjc1Ni0uNDAzLDEuMjgyLTEuMjA0LDEuNTc3LS44MDMuMjk2LTEuODA3LjQ0Mi0zLjAxMi40NDItMS4yNTQsMC0yLjI4Ni0uMTg5LTMuMTAyLS41NjctLjgxNC0uMzc4LTEuMjIxLTEuMTEtMS4yMjEtMi4xOTdsLjAxMi0xLjM4MmgtMTEuOTczbC0uMDE2LDEuMzgyYzAsMi4zMTUuNDQ4LDQuMTk5LDEuMzQ3LDUuNjUxLjg5NywxLjQ1MywyLjEyLDIuNTc1LDMuNjY3LDMuMzY3LDEuNTQ2Ljc5MiwzLjMsMS4zMzQsNS4yNjEsMS42MywxLjk2Mi4yOTUsNC4wMDUuNDQyLDYuMTMuNDQyLDIuMjQ0LDAsNC4zODMtLjIxMiw2LjQxNC0uNjM4LDIuMDMyLS40MjUsMy44MzItMS4wOTgsNS40MDMtMi4wMiwxLjU3MS0uOTIxLDIuODExLTIuMTIsMy43MjItMy41OTYuOTA5LTEuNDc2LDEuMzY0LTMuMjc4LDEuMzY0LTUuNDA0LDAtMi4zNjItLjQ3OS00LjIyMi0xLjQzNS01LjU4MVoiLz48cGF0aCBjbGFzcz0idXVpZC05NjAzM2Q4OS1mYTllLTRlZTctOWNmYS03MTliZjI1ZjlhMzgiIGQ9Ik0zMTQuNTksMzAuNjI3YzAsNC42NDQtMy43NTcsOC40MDEtOC40MDEsOC40MDFzLTguNDAxLTMuNzU3LTguNDAxLTguNDAxYzAtMi41MDUsMS4wOTYtNC43NDksMi44MTgtNi4yNzkuOTA0LS44LDEuOTY2LTEuNDA5LDMuMTQ4LTEuNzU3Ljc2NS0uMjQzLDEuNTgzLS4zNjUsMi40MzUtLjM2NSw0LjY0NCwwLDguNDAxLDMuNzU3LDguNDAxLDguNDAyWiIvPjwvc3ZnPg==" alt="KubeNest">
+    <h1>Workflow Mapper</h1>
+    <p>Sign in to manage sustainability data workflows</p>
+  </div>
+  <div class="card-body">
+    <div class="tabs">
+      <button class="tab active" id="tab-login" onclick="switchTab('login')">Sign In</button>
+      <button class="tab" id="tab-signup" onclick="switchTab('signup')">Create Account</button>
+    </div>
+    <div id="error-msg" class="error"></div>
+    <div id="success-msg" class="success"></div>
+    <form id="auth-form" onsubmit="handleSubmit(event)">
+      <div class="group" id="name-group" style="display:none">
+        <label class="label">Full Name</label>
+        <input class="field" type="text" id="name-field" placeholder="Your full name">
+      </div>
+      <div class="group">
+        <label class="label">Email Address</label>
+        <input class="field" type="email" id="email-field" placeholder="you@company.com" required>
+      </div>
+      <div class="group">
+        <label class="label">Password</label>
+        <input class="field" type="password" id="password-field" placeholder="Min 6 characters" required minlength="6">
+      </div>
+      <div class="forgot" id="forgot-link">
+        <a href="#" onclick="handleReset(event)">Forgot password?</a>
+      </div>
+      <button class="btn-primary" type="submit" id="submit-btn">Sign In</button>
+    </form>
+  </div>
+</div>
+
+<!-- Firebase SDK (compat for simplicity - uses CDN, free tier) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script>
+// =====================================================
+// FIREBASE CONFIG — Replace with your project's config
+// =====================================================
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+
+let mode = 'login'; // 'login' or 'signup'
+
+function switchTab(tab) {
+  mode = tab;
+  document.getElementById('tab-login').className = tab === 'login' ? 'tab active' : 'tab';
+  document.getElementById('tab-signup').className = tab === 'signup' ? 'tab active' : 'tab';
+  document.getElementById('name-group').style.display = tab === 'signup' ? 'block' : 'none';
+  document.getElementById('forgot-link').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('submit-btn').textContent = tab === 'login' ? 'Sign In' : 'Create Account';
+  hideMessages();
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+  document.getElementById('success-msg').style.display = 'none';
+}
+
+function showSuccess(msg) {
+  const el = document.getElementById('success-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+  document.getElementById('error-msg').style.display = 'none';
+}
+
+function hideMessages() {
+  document.getElementById('error-msg').style.display = 'none';
+  document.getElementById('success-msg').style.display = 'none';
+}
+
+function setLoading(loading) {
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = loading;
+  btn.textContent = loading ? 'Please wait...' : (mode === 'login' ? 'Sign In' : 'Create Account');
+}
+
+async function handleSubmit(e) {
+  e.preventDefault();
+  hideMessages();
+  const email = document.getElementById('email-field').value.trim();
+  const password = document.getElementById('password-field').value;
+
+  if (!email || !password) { showError('Please fill in all fields.'); return; }
+  if (password.length < 6) { showError('Password must be at least 6 characters.'); return; }
+
+  setLoading(true);
+  try {
+    if (mode === 'signup') {
+      const cred = await auth.createUserWithEmailAndPassword(email, password);
+      const name = document.getElementById('name-field').value.trim();
+      if (name) await cred.user.updateProfile({ displayName: name });
+      // Redirect to app
+      window.location.href = '/index.html';
+    } else {
+      await auth.signInWithEmailAndPassword(email, password);
+      window.location.href = '/index.html';
+    }
+  } catch (err) {
+    const msgs = {
+      'auth/email-already-in-use': 'An account with this email already exists.',
+      'auth/invalid-email': 'Please enter a valid email address.',
+      'auth/weak-password': 'Password must be at least 6 characters.',
+      'auth/user-not-found': 'No account found with this email.',
+      'auth/wrong-password': 'Incorrect password. Try again.',
+      'auth/invalid-credential': 'Invalid email or password.',
+      'auth/too-many-requests': 'Too many attempts. Please wait and try again.'
+    };
+    showError(msgs[err.code] || err.message);
+  }
+  setLoading(false);
+}
+
+async function handleReset(e) {
+  e.preventDefault();
+  const email = document.getElementById('email-field').value.trim();
+  if (!email) { showError('Enter your email above, then click forgot password.'); return; }
+  try {
+    await auth.sendPasswordResetEmail(email);
+    showSuccess('Password reset email sent. Check your inbox.');
+  } catch (err) {
+    showError(err.code === 'auth/user-not-found' ? 'No account found with this email.' : err.message);
+  }
+}
+
+// If already signed in, go straight to app
+auth.onAuthStateChanged(user => {
+  if (user) window.location.href = '/index.html';
+});
+</script>
+</body>
+</html>

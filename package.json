@@ -1,0 +1,9 @@
+{
+  "name": "kubenest-workflow-mapper",
+  "version": "1.0.0",
+  "description": "KubeNest Sustainability Data Workflow Mapper with Firebase",
+  "scripts": {
+    "deploy": "firebase deploy"
+  },
+  "private": true
+}
