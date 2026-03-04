@@ -1,9 +1,16 @@
 {
   "name": "kubenest-workflow-mapper",
   "version": "1.0.0",
-  "description": "KubeNest Sustainability Data Workflow Mapper with Firebase",
+  "description": "KubeNest Sustainability Data Workflow Mapper with Neon + Vercel",
   "scripts": {
-    "deploy": "firebase deploy"
+    "setup-db": "node setup-db.js",
+    "dev": "vercel dev"
   },
-  "private": true
+  "private": true,
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.3.1",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.19.0"
+  }
 }

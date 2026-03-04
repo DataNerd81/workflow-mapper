@@ -78,26 +78,8 @@
   </div>
 </div>
 
-<!-- Firebase SDK (compat for simplicity - uses CDN, free tier) -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script>
-// =====================================================
-// FIREBASE CONFIG — Replace with your project's config
-// =====================================================
-const firebaseConfig = {
-  apiKey: "AIzaSyC_zvo7na0JcUAUyLXUYl0PVapYX0BA1xI",
-  authDomain: "kubenest-workflows.firebaseapp.com",
-  projectId: "kubenest-workflows",
-  storageBucket: "kubenest-workflows.firebasestorage.app",
-  messagingSenderId: "264783997654",
-  appId: "1:264783997654:web:17cd896b131bb7441a7777"
-};
-
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-
-let mode = 'login'; // 'login' or 'signup'
+let mode = 'login';
 
 function switchTab(tab) {
   mode = tab;
@@ -145,47 +127,38 @@ async function handleSubmit(e) {
 
   setLoading(true);
   try {
-    if (mode === 'signup') {
-      const cred = await auth.createUserWithEmailAndPassword(email, password);
-      const name = document.getElementById('name-field').value.trim();
-      if (name) await cred.user.updateProfile({ displayName: name });
-      // Redirect to app
-      window.location.href = '/index.html';
-    } else {
-      await auth.signInWithEmailAndPassword(email, password);
-      window.location.href = '/index.html';
+    const endpoint = mode === 'signup' ? '/api/auth/signup' : '/api/auth/login';
+    const resp = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      showError(data.error || 'Something went wrong.');
+      setLoading(false);
+      return;
     }
+
+    localStorage.setItem('kn_token', data.token);
+    localStorage.setItem('kn_user', JSON.stringify(data.user));
+    window.location.href = '/index.html';
   } catch (err) {
-    const msgs = {
-      'auth/email-already-in-use': 'An account with this email already exists.',
-      'auth/invalid-email': 'Please enter a valid email address.',
-      'auth/weak-password': 'Password must be at least 6 characters.',
-      'auth/user-not-found': 'No account found with this email.',
-      'auth/wrong-password': 'Incorrect password. Try again.',
-      'auth/invalid-credential': 'Invalid email or password.',
-      'auth/too-many-requests': 'Too many attempts. Please wait and try again.'
-    };
-    showError(msgs[err.code] || err.message);
+    showError('Network error. Please check your connection.');
   }
   setLoading(false);
 }
 
-async function handleReset(e) {
+function handleReset(e) {
   e.preventDefault();
-  const email = document.getElementById('email-field').value.trim();
-  if (!email) { showError('Enter your email above, then click forgot password.'); return; }
-  try {
-    await auth.sendPasswordResetEmail(email);
-    showSuccess('Password reset email sent. Check your inbox.');
-  } catch (err) {
-    showError(err.code === 'auth/user-not-found' ? 'No account found with this email.' : err.message);
-  }
+  showError('Password reset is not yet available. Please contact support.');
 }
 
 // If already signed in, go straight to app
-auth.onAuthStateChanged(user => {
-  if (user) window.location.href = '/index.html';
-});
+if (localStorage.getItem('kn_token')) {
+  window.location.href = '/index.html';
+}
 </script>
 </body>
 </html>
