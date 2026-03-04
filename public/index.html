@@ -440,7 +440,7 @@ async function generateInviteLink(clientId){
 function render(){
   const app=document.getElementById("app");app.innerHTML="";
   if(state.showPrintView&&getClient()){renderPrintView(app);return}
-  if(state.clients.length===0){
+  if(getAllClients().length===0){
     app.appendChild(h("div",{className:"welcome"},
       h("div",{style:{maxWidth:"440px"}},
         h("div",{style:{marginBottom:"32px"}},h("img",{src:LOGO_DARKBG,style:{height:"40px"}})),
@@ -454,6 +454,8 @@ function render(){
     ));
     if(state.showClientModal)renderClientModal(app);return;
   }
+  // If user has no own clients but has shared clients, auto-select the first shared client
+  if(!getClient()&&state.sharedClients.length>0){state.activeClientId=state.sharedClients[0].id}
   const client=getClient(),wfs=getWorkflows(),activeWf=getActiveWf(),search=state.search.toLowerCase();
   const container=h("div",{className:"app"});
 
