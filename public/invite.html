@@ -135,7 +135,8 @@ async function loadInvite() {
     }
     inviteData = await resp.json();
     document.getElementById('client-name').textContent = inviteData.clientName;
-    document.getElementById('invite-detail').textContent = 'Invited by ' + inviteData.ownerEmail + ' to collaborate on workflows';
+    const roleLabel = inviteData.inviteRole === 'admin' ? 'as an Admin' : 'as a Team Member';
+    document.getElementById('invite-detail').textContent = 'Invited by ' + inviteData.ownerEmail + ' ' + roleLabel;
     document.getElementById('loading').style.display = 'none';
     document.getElementById('main-content').style.display = 'block';
 
@@ -159,6 +160,13 @@ async function acceptInvite(token) {
     });
     const data = await resp.json();
     if (resp.ok) {
+      // Update token and user info if a new token was returned (role upgrade)
+      if (data.token) {
+        localStorage.setItem(TOKEN_KEY, data.token);
+      }
+      if (data.user) {
+        localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+      }
       // Store which shared client to show
       localStorage.setItem('kn_pending_shared', JSON.stringify({
         ownerId: data.ownerId,

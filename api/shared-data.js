@@ -1,5 +1,5 @@
 const { getPool } = require('./_db');
-const { verifyToken, cors } = require('./_auth');
+const { verifyToken, cors, ROLES } = require('./_auth');
 
 module.exports = async function handler(req, res) {
   cors(res);
@@ -14,12 +14,19 @@ module.exports = async function handler(req, res) {
 
   if (!ownerId || !clientId) return res.status(400).json({ error: 'ownerId and clientId required' });
 
-  // Verify the user has access
-  const accessCheck = await pool.query(
-    `SELECT role FROM client_access WHERE owner_id = $1 AND client_id = $2 AND member_id = $3`,
-    [ownerId, clientId, decoded.userId]
-  );
-  if (accessCheck.rows.length === 0) return res.status(403).json({ error: 'Access denied' });
+  // Sysadmin has access to everything
+  let role = null;
+  if (decoded.role === ROLES.SYSADMIN) {
+    role = 'editor';
+  } else {
+    // Verify the user has access
+    const accessCheck = await pool.query(
+      `SELECT role FROM client_access WHERE owner_id = $1 AND client_id = $2 AND member_id = $3`,
+      [ownerId, clientId, decoded.userId]
+    );
+    if (accessCheck.rows.length === 0) return res.status(403).json({ error: 'Access denied' });
+    role = accessCheck.rows[0].role;
+  }
 
   if (req.method === 'GET') {
     try {
@@ -34,7 +41,7 @@ module.exports = async function handler(req, res) {
       res.status(500).json({ error: 'Failed to load data.' });
     }
   } else if (req.method === 'PUT') {
-    const role = accessCheck.rows[0].role;
+    // Both admins and users can edit workflows
     if (role !== 'editor') return res.status(403).json({ error: 'Read-only access' });
 
     try {

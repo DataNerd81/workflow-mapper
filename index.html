@@ -97,6 +97,16 @@
   .empty .eicon { font-size: 40px; margin-bottom: 16px; }
   .empty h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
   .empty p { font-size: 14px; margin-bottom: 20px; }
+  .role-badge { font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .role-sysadmin { background: rgba(255,0,128,0.12); color: #ff0080; }
+  .role-admin { background: rgba(105,65,198,0.12); color: #6941c6; }
+  .role-user { background: rgba(27,175,192,0.12); color: #1bafc0; }
+  .btn-signout { padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: transparent; color: #9CA3AF; font-size: 12px; font-weight: 500; }
+  .btn-invite { padding: 6px 14px; border-radius: 8px; border: none; background: #6941c6; color: white; font-size: 12px; font-weight: 600; }
+  .invite-link-box { background: #F3F4F6; border-radius: 8px; padding: 12px; font-size: 13px; word-break: break-all; margin-top: 12px; }
+  .member-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border: 1px solid #E5E7EB; border-radius: 8px; margin-bottom: 6px; }
+  .member-email { font-size: 14px; font-weight: 500; }
+  .member-role { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
   .print-toolbar { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: var(--dark); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; }
   .btn-print { padding: 8px 20px; border-radius: 8px; border: none; background: var(--p1); color: var(--white); font-size: 13px; font-weight: 600; }
   .btn-back { padding: 8px 20px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: var(--white); font-size: 13px; }
@@ -133,10 +143,65 @@ function catColor(c){return CAT_COLORS[c]||"#1bafc0"}
 function catLabel(w){return w.category==="Custom..."?(w.customCategory||"Custom"):(w.category||"Untitled")}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 
-let state={clients:[],activeClientId:null,activeWfId:null,editing:null,isEditing:false,search:"",collapsed:{},showClientModal:false,showPrintView:false,showDataMenu:false};
+// Auth helpers
+const TOKEN_KEY = 'kn_token';
+const USER_KEY = 'kn_user';
+function getToken(){return localStorage.getItem(TOKEN_KEY)}
+function getUser(){try{return JSON.parse(localStorage.getItem(USER_KEY))||null}catch(e){return null}}
+function getUserRole(){const u=getUser();return u?u.role:'user'}
+function canInvite(){const r=getUserRole();return r==='sysadmin'||r==='admin'}
+function isSysAdmin(){return getUserRole()==='sysadmin'}
+function isAdmin(){return getUserRole()==='admin'}
+function signOut(){localStorage.removeItem(TOKEN_KEY);localStorage.removeItem(USER_KEY);window.location.href='/public/login.html'}
+
+// Check auth on load
+if(!getToken()){window.location.href='/public/login.html'}
+
+let state={clients:[],activeClientId:null,activeWfId:null,editing:null,isEditing:false,search:"",collapsed:{},showClientModal:false,showPrintView:false,showDataMenu:false,showInviteModal:false,inviteLink:null,showMembersModal:false,orgMembers:[]};
 
 function load(){try{const r=localStorage.getItem(STORAGE_KEY);if(r){const d=JSON.parse(r);if(d.clients&&d.clients.length){state.clients=d.clients;state.activeClientId=d.activeClientId||d.clients[0].id}}}catch(e){}}
-function save(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify({clients:state.clients,activeClientId:state.activeClientId}))}catch(e){}}
+function save(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify({clients:state.clients,activeClientId:state.activeClientId}));cloudSave()}catch(e){}}
+
+// Cloud save/load via API
+async function cloudSave(){
+  const token=getToken();if(!token)return;
+  try{
+    await fetch('/api/data',{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({clients:state.clients,activeClientId:state.activeClientId})});
+  }catch(e){console.error('Cloud save error:',e)}
+}
+async function cloudLoad(){
+  const token=getToken();if(!token)return;
+  try{
+    const resp=await fetch('/api/data',{headers:{'Authorization':'Bearer '+token}});
+    if(resp.ok){const d=await resp.json();if(d.clients&&d.clients.length){state.clients=d.clients;state.activeClientId=d.activeClientId||d.clients[0].id;save()}}
+  }catch(e){console.error('Cloud load error:',e)}
+}
+async function generateInviteLink(clientId,inviteRole){
+  const token=getToken();if(!token)return null;
+  try{
+    const resp=await fetch('/api/invites',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({clientId,inviteRole})});
+    if(resp.ok){const d=await resp.json();return window.location.origin+'/public/invite.html?token='+d.token}
+    const err=await resp.json();alert(err.error||'Failed to create invite');return null;
+  }catch(e){alert('Network error');return null}
+}
+async function loadOrgMembers(){
+  const token=getToken();if(!token)return;
+  try{
+    const resp=await fetch('/api/shared-clients',{headers:{'Authorization':'Bearer '+token}});
+    if(resp.ok){const d=await resp.json();state.orgMembers=d.orgMembers||[];render()}
+  }catch(e){console.error('Load members error:',e)}
+}
+async function removeMember(orgId,userId){
+  const token=getToken();if(!token)return;
+  if(!confirm('Remove this member from the organization?'))return;
+  try{
+    await fetch('/api/organizations',{method:'DELETE',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({orgId,userId})});
+    loadOrgMembers();
+  }catch(e){alert('Failed to remove member')}
+}
 function getClient(){return state.clients.find(c=>c.id===state.activeClientId)}
 function getWorkflows(){return(getClient()||{}).workflows||[]}
 function getActiveWf(){const w=getWorkflows();return w.find(x=>x.id===state.activeWfId)||w[0]}
@@ -361,6 +426,80 @@ function renderClientModal(app){
   m.appendChild(foot);ov.appendChild(m);app.appendChild(ov);
 }
 
+function renderInviteModal(app){
+  const ov=h("div",{className:"modal-overlay",onClick:()=>{state.showInviteModal=false;state.inviteLink=null;render()}});
+  const m=h("div",{className:"modal",style:{width:"440px"},onClick:e=>e.stopPropagation()});
+  m.appendChild(h("div",{className:"modal-header"},h("h2",null,"Invite People"),h("button",{className:"modal-close",onClick:()=>{state.showInviteModal=false;state.inviteLink=null;render()}},"\u00D7")));
+  const body=h("div",{className:"modal-body"});
+  const client=getClient();
+  if(!client){body.appendChild(h("p",null,"Please select a client first."));m.appendChild(body);ov.appendChild(m);app.appendChild(ov);return}
+
+  body.appendChild(h("p",{style:{fontSize:"14px",color:"#6B7280",marginBottom:"16px"}},"Generate an invite link for "+client.name));
+
+  if(isSysAdmin()){
+    body.appendChild(h("button",{className:"btn-invite",style:{width:"100%",marginBottom:"8px",padding:"12px"},onClick:async()=>{
+      const link=await generateInviteLink(client.id,'admin');
+      if(link){state.inviteLink=link;render()}
+    }},"Invite as Admin (Org Owner)"));
+  }
+
+  if(canInvite()){
+    body.appendChild(h("button",{className:"btn-save",style:{width:"100%",padding:"12px"},onClick:async()=>{
+      const link=await generateInviteLink(client.id,'user');
+      if(link){state.inviteLink=link;render()}
+    }},"Invite as User (Team Member)"));
+  }
+
+  if(state.inviteLink){
+    const linkBox=h("div",{className:"invite-link-box"});
+    linkBox.appendChild(h("div",{style:{fontSize:"11px",color:"#6B7280",marginBottom:"6px",fontWeight:"600",textTransform:"uppercase"}},"Share this link:"));
+    linkBox.appendChild(h("div",{style:{fontSize:"13px",wordBreak:"break-all",color:"#101828"}},state.inviteLink));
+    const copyBtn=h("button",{className:"btn-save",style:{marginTop:"10px",padding:"8px 16px",fontSize:"12px"},onClick:()=>{
+      navigator.clipboard.writeText(state.inviteLink).then(()=>{copyBtn.textContent='Copied!'}).catch(()=>{});
+    }},"Copy Link");
+    linkBox.appendChild(copyBtn);
+    body.appendChild(linkBox);
+  }
+
+  m.appendChild(body);ov.appendChild(m);app.appendChild(ov);
+}
+
+function renderMembersModal(app){
+  const ov=h("div",{className:"modal-overlay",onClick:()=>{state.showMembersModal=false;render()}});
+  const m=h("div",{className:"modal",onClick:e=>e.stopPropagation()});
+  m.appendChild(h("div",{className:"modal-header"},h("h2",null,"Organization Members"),h("button",{className:"modal-close",onClick:()=>{state.showMembersModal=false;render()}},"\u00D7")));
+  const body=h("div",{className:"modal-body"});
+
+  if(state.orgMembers.length===0){
+    body.appendChild(h("div",{style:{padding:"20px",textAlign:"center",color:"#9CA3AF",fontSize:"14px"}},"No members yet. Use the invite button to add people."));
+  }else{
+    // Group by org
+    const byOrg={};
+    state.orgMembers.forEach(m=>{
+      const key=m.org_id;
+      if(!byOrg[key])byOrg[key]={name:m.org_name,members:[]};
+      byOrg[key].members.push(m);
+    });
+
+    Object.values(byOrg).forEach(org=>{
+      body.appendChild(h("div",{style:{fontSize:"13px",fontWeight:"700",color:"#6B7280",marginBottom:"8px",marginTop:"12px",textTransform:"uppercase",letterSpacing:"0.5px"}},org.name));
+      org.members.forEach(member=>{
+        const row=h("div",{className:"member-row"});
+        const left=h("div");
+        left.appendChild(h("div",{className:"member-email"},member.email));
+        left.appendChild(h("div",{className:"member-role",style:{color:member.member_role==='admin'?'#6941c6':'#1bafc0'}},member.member_role));
+        row.appendChild(left);
+        if(canInvite()&&member.member_role!=='admin'){
+          row.appendChild(h("button",{style:{background:"none",border:"none",color:"#DC2626",fontSize:"12px",fontWeight:"600",cursor:"pointer"},onClick:()=>removeMember(member.org_id,member.user_id)},"Remove"));
+        }
+        body.appendChild(row);
+      });
+    });
+  }
+
+  m.appendChild(body);ov.appendChild(m);app.appendChild(ov);
+}
+
 function render(){
   const app=document.getElementById("app");app.innerHTML="";
   if(state.showPrintView&&getClient()){renderPrintView(app);return}
@@ -390,12 +529,26 @@ function render(){
       h("span",{className:"dot"}),client?client.name:"Select Client",h("span",{className:"arrow"},"\u25BC"))
   ));
   const hr=h("div",{className:"header-right"});
+  // Role badge
+  const userRole=getUserRole();
+  const roleClass=userRole==='sysadmin'?'role-sysadmin':userRole==='admin'?'role-admin':'role-user';
+  const roleLabel=userRole==='sysadmin'?'System Admin':userRole==='admin'?'Admin':'User';
+  hr.appendChild(h("span",{className:"role-badge "+roleClass},roleLabel));
   hr.appendChild(h("div",{className:"badge"},wfs.length+" workflow"+(wfs.length!==1?"s":"")));
   if(wfs.length>0)hr.appendChild(h("button",{className:"btn-export",onClick:()=>{state.showPrintView=true;render()}},"Export PDF"));
+  // Invite button (sysadmin & admin only)
+  if(canInvite())hr.appendChild(h("button",{className:"btn-invite",onClick:()=>{state.showInviteModal=true;render()}},"Invite"));
+  // Members button (sysadmin & admin only)
+  if(canInvite())hr.appendChild(h("button",{className:"btn-data",onClick:()=>{state.showMembersModal=true;loadOrgMembers()}},"Members"));
   const dm=h("div",{className:"data-menu"});
   dm.appendChild(h("button",{className:"btn-data",onClick:()=>{state.showDataMenu=!state.showDataMenu;render()}},"\u2699 Data"));
   if(state.showDataMenu)dm.appendChild(h("div",{className:"data-dropdown"},h("button",{onClick:exportJSON},"\u{1F4E5} Export All Data"),h("div",{className:"sep"}),h("button",{onClick:importJSON},"\u{1F4E4} Import Data")));
-  hr.appendChild(dm);header.appendChild(hr);container.appendChild(header);
+  hr.appendChild(dm);
+  // User email & sign out
+  const user=getUser();
+  if(user)hr.appendChild(h("span",{style:{fontSize:"12px",color:"#9CA3AF"}},user.email));
+  hr.appendChild(h("button",{className:"btn-signout",onClick:signOut},"Sign Out"));
+  header.appendChild(hr);container.appendChild(header);
 
   // Main
   const main=h("div",{className:"main"});
@@ -451,9 +604,14 @@ function render(){
   main.appendChild(content);container.appendChild(main);app.appendChild(container);
   if(state.showDataMenu)setTimeout(()=>{const handler=e=>{if(!e.target.closest(".data-menu")){state.showDataMenu=false;document.removeEventListener("click",handler);render()}};document.addEventListener("click",handler)},0);
   if(state.showClientModal)renderClientModal(app);
+  if(state.showInviteModal)renderInviteModal(app);
+  if(state.showMembersModal)renderMembersModal(app);
 }
 
-load();render();
+load();
+// Also try cloud load if authenticated
+if(getToken()){cloudLoad().then(()=>render())}
+render();
 </script>
 </body>
 </html>
