@@ -20,13 +20,13 @@ module.exports = async function handler(req, res) {
 
     const hash = await bcrypt.hash(password, 10);
     const result = await pool.query(
-      'INSERT INTO users (email, password_hash, data) VALUES ($1, $2, $3) RETURNING id, email',
-      [email.toLowerCase(), hash, JSON.stringify({ clients: [], activeClientId: null })]
+      'INSERT INTO users (email, password_hash, role, data) VALUES ($1, $2, $3, $4) RETURNING id, email, role',
+      [email.toLowerCase(), hash, 'user', JSON.stringify({ clients: [], activeClientId: null })]
     );
 
     const user = result.rows[0];
-    const token = signToken(user.id, user.email);
-    res.status(201).json({ token, user: { id: user.id, email: user.email } });
+    const token = signToken(user.id, user.email, user.role);
+    res.status(201).json({ token, user: { id: user.id, email: user.email, role: user.role } });
   } catch (err) {
     console.error('Signup error:', err);
     res.status(500).json({ error: 'Server error. Please try again.' });
