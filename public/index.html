@@ -143,7 +143,7 @@ function catColor(c){return CAT_COLORS[c]||"#1bafc0"}
 function catLabel(w){return w.category==="Custom..."?(w.customCategory||"Custom"):(w.category||"Untitled")}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 
-let state={clients:[],activeClientId:null,activeWfId:null,editing:null,isEditing:false,search:"",collapsed:{},showClientModal:false,showPrintView:false,showDataMenu:false};
+let state={clients:[],sharedClients:[],activeClientId:null,activeWfId:null,editing:null,isEditing:false,search:"",collapsed:{},showClientModal:false,showPrintView:false,showDataMenu:false,showInviteModal:null,inviteLink:null};
 
 async function loadFromAPI(){
   try{
@@ -152,19 +152,38 @@ async function loadFromAPI(){
     const d=await resp.json();
     if(d.clients&&d.clients.length){state.clients=d.clients;state.activeClientId=d.activeClientId||d.clients[0].id}
   }catch(e){console.error('Load error:',e)}
+  // Load shared clients
+  try{
+    const resp2=await fetch('/api/shared-clients',{headers:{'Authorization':'Bearer '+getToken()}});
+    if(resp2.ok){const d2=await resp2.json();state.sharedClients=d2.sharedClients||[]}
+  }catch(e){console.error('Shared clients load error:',e)}
+  // Check for pending shared client from invite accept
+  const pending=localStorage.getItem('kn_pending_shared');
+  if(pending){
+    localStorage.removeItem('kn_pending_shared');
+    try{const p=JSON.parse(pending);const sc=state.sharedClients.find(c=>c.id===p.clientId);if(sc)state.activeClientId=sc.id}catch(e){}
+  }
 }
 let _saveTimer=null;
+function isSharedClient(c){return c&&c._shared}
 function save(){
   if(!getToken())return;
   clearTimeout(_saveTimer);
   _saveTimer=setTimeout(()=>{
-    fetch('/api/data',{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getToken()},body:JSON.stringify({clients:state.clients,activeClientId:state.activeClientId})}).catch(e=>console.error('Save error:',e));
+    // Save own clients
+    const ownClients=state.clients.filter(c=>!c._shared);
+    fetch('/api/data',{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getToken()},body:JSON.stringify({clients:ownClients,activeClientId:state.activeClientId})}).catch(e=>console.error('Save error:',e));
   },300);
 }
-function getClient(){return state.clients.find(c=>c.id===state.activeClientId)}
+function saveSharedClient(client){
+  if(!getToken()||!client._shared)return;
+  fetch('/api/shared-data?ownerId='+client._ownerId+'&clientId='+client.id,{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getToken()},body:JSON.stringify({ownerId:client._ownerId,clientId:client.id,workflows:client.workflows||[]})}).catch(e=>console.error('Shared save error:',e));
+}
+function getAllClients(){return[...state.clients,...state.sharedClients]}
+function getClient(){return getAllClients().find(c=>c.id===state.activeClientId)}
 function getWorkflows(){return(getClient()||{}).workflows||[]}
 function getActiveWf(){const w=getWorkflows();return w.find(x=>x.id===state.activeWfId)||w[0]}
-function setClientWorkflows(fn){const c=getClient();if(!c)return;c.workflows=typeof fn==="function"?fn(c.workflows||[]):fn;save();render()}
+function setClientWorkflows(fn){const c=getClient();if(!c)return;c.workflows=typeof fn==="function"?fn(c.workflows||[]):fn;if(isSharedClient(c))saveSharedClient(c);else save();render()}
 function update(ch){Object.assign(state,ch);save();render()}
 
 function exportJSON(){
@@ -330,24 +349,45 @@ function renderPrintView(app){
 }
 
 function renderClientModal(app){
-  const ov=h("div",{className:"modal-overlay",onClick:()=>{state.showClientModal=false;render()}});
+  const ov=h("div",{className:"modal-overlay",onClick:()=>{state.showClientModal=false;state.showInviteModal=null;state.inviteLink=null;render()}});
   const m=h("div",{className:"modal",onClick:e=>e.stopPropagation()});
-  m.appendChild(h("div",{className:"modal-header"},h("h2",null,"Client Manager"),h("button",{className:"modal-close",onClick:()=>{state.showClientModal=false;render()}},"\u00D7")));
+  m.appendChild(h("div",{className:"modal-header"},h("h2",null,"Client Manager"),h("button",{className:"modal-close",onClick:()=>{state.showClientModal=false;state.showInviteModal=null;state.inviteLink=null;render()}},"\u00D7")));
   const body=h("div",{className:"modal-body"});
-  if(state.clients.length===0){body.appendChild(h("div",{style:{padding:"20px",textAlign:"center",color:"#9CA3AF",fontSize:"14px"}},"No clients yet. Add your first client below."))}
-  else{state.clients.forEach(c=>{
-    const card=h("div",{className:"client-card"+(c.id===state.activeClientId?" active":""),onClick:()=>{state.activeClientId=c.id;state.activeWfId=null;state.isEditing=false;state.editing=null;state.showClientModal=false;save();render()}});
+  const allClients=getAllClients();
+  if(allClients.length===0){body.appendChild(h("div",{style:{padding:"20px",textAlign:"center",color:"#9CA3AF",fontSize:"14px"}},"No clients yet. Add your first client below."))}
+  else{allClients.forEach(c=>{
+    const shared=isSharedClient(c);
+    const card=h("div",{className:"client-card"+(c.id===state.activeClientId?" active":""),onClick:()=>{state.activeClientId=c.id;state.activeWfId=null;state.isEditing=false;state.editing=null;state.showClientModal=false;if(!shared)save();render()}});
     const left=h("div",{style:{display:"flex",alignItems:"center"}});
     if(c.logo)left.appendChild(h("img",{className:"client-logo-sm",src:c.logo}));
     const info=h("div");
-    info.appendChild(h("div",{className:"cname"},c.name));
-    info.appendChild(h("div",{className:"detail"},[c.industry,c.contact].filter(Boolean).join(" \u2022 ")+" \u2022 "+(c.workflows||[]).length+" workflow"+((c.workflows||[]).length!==1?"s":"")));
+    const nameRow=h("div",{style:{display:"flex",alignItems:"center",gap:"6px"}});
+    nameRow.appendChild(h("span",{className:"cname"},c.name));
+    if(shared)nameRow.appendChild(h("span",{style:{fontSize:"9px",fontWeight:"700",color:"#6941c6",background:"rgba(105,65,198,0.08)",padding:"2px 6px",borderRadius:"3px"}},"SHARED"));
+    info.appendChild(nameRow);
+    const detailParts=[c.industry,c.contact].filter(Boolean).join(" \u2022 ");
+    const wfCount=(c.workflows||[]).length+" workflow"+((c.workflows||[]).length!==1?"s":"");
+    info.appendChild(h("div",{className:"detail"},(detailParts?detailParts+" \u2022 ":"")+wfCount+(shared?" \u2022 via "+c._ownerEmail:"")));
     left.appendChild(info);card.appendChild(left);
-    const right=h("div",{style:{display:"flex",alignItems:"center",gap:"8px"}});
+    const right=h("div",{style:{display:"flex",alignItems:"center",gap:"6px"}});
     if(c.id===state.activeClientId)right.appendChild(h("span",{className:"client-badge"},"ACTIVE"));
-    right.appendChild(h("button",{style:{background:"none",border:"none",fontSize:"14px",color:"#D1D5DB",cursor:"pointer",padding:"4px"},onClick:e=>{e.stopPropagation();if(confirm("Delete "+c.name+"?")){state.clients=state.clients.filter(x=>x.id!==c.id);if(state.activeClientId===c.id)state.activeClientId=state.clients[0]?.id||null;save();render()}}},"\u00D7"));
+    if(!shared){
+      right.appendChild(h("button",{style:{background:"none",border:"1px solid rgba(27,175,192,0.3)",borderRadius:"6px",fontSize:"11px",color:"var(--p1)",cursor:"pointer",padding:"4px 8px",fontWeight:"600",fontFamily:"inherit"},onClick:e=>{e.stopPropagation();generateInviteLink(c.id)}},"Invite"));
+      right.appendChild(h("button",{style:{background:"none",border:"none",fontSize:"14px",color:"#D1D5DB",cursor:"pointer",padding:"4px"},onClick:e=>{e.stopPropagation();if(confirm("Delete "+c.name+"?")){state.clients=state.clients.filter(x=>x.id!==c.id);if(state.activeClientId===c.id)state.activeClientId=state.clients[0]?.id||null;save();render()}}},"\u00D7"));
+    }
     card.appendChild(right);body.appendChild(card);
   })}
+  // Invite link display
+  if(state.inviteLink){
+    const invBox=h("div",{style:{margin:"12px 0",padding:"14px 16px",background:"rgba(27,175,192,0.04)",border:"1px solid rgba(27,175,192,0.2)",borderRadius:"10px"}});
+    invBox.appendChild(h("div",{style:{fontSize:"12px",fontWeight:"700",color:"var(--p1)",marginBottom:"8px",textTransform:"uppercase",letterSpacing:"0.5px"}},"Invite Link for "+state.showInviteModal));
+    const linkInput=h("input",{className:"field",value:state.inviteLink,readOnly:true,style:{fontSize:"12px",marginBottom:"8px",background:"#F9FAFB"}});
+    linkInput.addEventListener("click",()=>{linkInput.select();document.execCommand('copy')});
+    invBox.appendChild(linkInput);
+    const copyBtn=h("button",{style:{padding:"8px 16px",borderRadius:"8px",border:"none",background:"var(--p1)",color:"white",fontSize:"12px",fontWeight:"600",fontFamily:"inherit",cursor:"pointer"},onClick:()=>{navigator.clipboard.writeText(state.inviteLink).then(()=>{copyBtn.textContent="Copied!";setTimeout(()=>{copyBtn.textContent="Copy Link"},2000)})}},"Copy Link");
+    invBox.appendChild(h("div",{style:{display:"flex",alignItems:"center",gap:"8px"}},copyBtn,h("span",{style:{fontSize:"11px",color:"#9CA3AF"}},"Send this link to your client")));
+    body.appendChild(invBox);
+  }
   m.appendChild(body);
 
   // Add client form
@@ -385,6 +425,18 @@ function renderClientModal(app){
   m.appendChild(foot);ov.appendChild(m);app.appendChild(ov);
 }
 
+async function generateInviteLink(clientId){
+  try{
+    const resp=await fetch('/api/invites',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getToken()},body:JSON.stringify({clientId})});
+    const d=await resp.json();
+    if(resp.ok){
+      state.inviteLink=window.location.origin+'/invite.html?token='+d.token;
+      state.showInviteModal=d.clientName;
+      render();
+    }else{alert(d.error||'Failed to create invite')}
+  }catch(e){alert('Network error creating invite')}
+}
+
 function render(){
   const app=document.getElementById("app");app.innerHTML="";
   if(state.showPrintView&&getClient()){renderPrintView(app);return}
@@ -410,8 +462,8 @@ function render(){
   header.appendChild(h("div",{className:"header-left"},
     h("img",{src:LOGO_WHITE,className:"logo-img"}),
     h("div",{className:"divider"}),
-    h("button",{className:"btn-client",onClick:()=>{state.showClientModal=true;render()}},
-      h("span",{className:"dot"}),client?client.name:"Select Client",h("span",{className:"arrow"},"\u25BC"))
+    h("button",{className:"btn-client",onClick:()=>{state.showClientModal=true;state.inviteLink=null;state.showInviteModal=null;render()}},
+      h("span",{className:"dot",style:isSharedClient(client)?{background:"#6941c6"}:{}}),client?client.name:"Select Client",isSharedClient(client)?h("span",{style:{fontSize:"9px",fontWeight:"700",color:"#6941c6",background:"rgba(105,65,198,0.15)",padding:"2px 6px",borderRadius:"3px",marginLeft:"6px"}},"SHARED"):null,h("span",{className:"arrow"},"\u25BC"))
   ));
   const hr=h("div",{className:"header-right"});
   hr.appendChild(h("div",{className:"badge"},wfs.length+" workflow"+(wfs.length!==1?"s":"")));
