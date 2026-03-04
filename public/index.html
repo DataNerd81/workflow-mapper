@@ -372,7 +372,7 @@ function renderClientModal(app){
     const right=h("div",{style:{display:"flex",alignItems:"center",gap:"6px"}});
     if(c.id===state.activeClientId)right.appendChild(h("span",{className:"client-badge"},"ACTIVE"));
     if(!shared){
-      right.appendChild(h("button",{style:{background:"none",border:"1px solid rgba(27,175,192,0.3)",borderRadius:"6px",fontSize:"11px",color:"var(--p1)",cursor:"pointer",padding:"4px 8px",fontWeight:"600",fontFamily:"inherit"},onClick:e=>{e.stopPropagation();generateInviteLink(c.id)}},"Invite"));
+      right.appendChild(h("button",{style:{background:"var(--p1)",border:"none",borderRadius:"6px",fontSize:"11px",color:"#fff",cursor:"pointer",padding:"6px 12px",fontWeight:"700",fontFamily:"inherit",letterSpacing:"0.3px"},onClick:e=>{e.stopPropagation();generateInviteLink(c.id)}},"Invite"));
       right.appendChild(h("button",{style:{background:"none",border:"none",fontSize:"14px",color:"#D1D5DB",cursor:"pointer",padding:"4px"},onClick:e=>{e.stopPropagation();if(confirm("Delete "+c.name+"?")){state.clients=state.clients.filter(x=>x.id!==c.id);if(state.activeClientId===c.id)state.activeClientId=state.clients[0]?.id||null;save();render()}}},"\u00D7"));
     }
     card.appendChild(right);body.appendChild(card);
