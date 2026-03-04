@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KubeNest — Accept Invitation</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8f8f8; color: #101828; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+  :root { --p1: #1bafc0; --p2: #6941c6; --p3: #0842c0; --dark: #101828; --white: #ffffff; }
+  .card { background: var(--white); border-radius: 20px; box-shadow: 0 8px 40px rgba(0,0,0,0.08); width: 100%; max-width: 420px; overflow: hidden; }
+  .card-top { background: var(--dark); padding: 32px 32px 28px; text-align: center; position: relative; overflow: hidden; }
+  .card-top .orb { position: absolute; width: 200px; height: 200px; border-radius: 50%; opacity: 0.08; }
+  .card-top .orb1 { background: var(--p1); top: -80px; left: -60px; }
+  .card-top .orb2 { background: var(--p2); bottom: -80px; right: -60px; }
+  .card-top img { height: 32px; margin-bottom: 16px; position: relative; }
+  .card-top h1 { color: var(--white); font-size: 20px; font-weight: 700; position: relative; }
+  .card-top p { color: #94A3B8; font-size: 13px; margin-top: 6px; position: relative; }
+  .card-body { padding: 28px 32px 32px; }
+  .invite-info { background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; text-align: center; }
+  .invite-info .client-name { font-size: 18px; font-weight: 700; color: #101828; margin-bottom: 4px; }
+  .invite-info .invite-detail { font-size: 13px; color: #6B7280; }
+  .tabs { display: flex; gap: 0; margin-bottom: 24px; background: #F3F4F6; border-radius: 10px; padding: 4px; }
+  .tab { flex: 1; padding: 10px; border-radius: 8px; border: none; background: none; font-family: inherit; font-size: 13px; font-weight: 600; color: #9CA3AF; cursor: pointer; transition: all 0.2s; }
+  .tab.active { background: var(--white); color: var(--dark); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .label { font-size: 11px; letter-spacing: 0.5px; color: #6B7280; margin-bottom: 6px; display: block; text-transform: uppercase; font-weight: 600; }
+  .field { width: 100%; padding: 11px 14px; border-radius: 10px; border: 1px solid #D1D5DB; background: var(--white); color: var(--dark); font-family: inherit; font-size: 14px; outline: none; transition: border-color 0.2s; }
+  .field:focus { border-color: var(--p1); }
+  .group { margin-bottom: 16px; }
+  .btn-primary { width: 100%; padding: 13px; border-radius: 12px; border: none; background: var(--p1); color: var(--white); font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; transition: opacity 0.2s; }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .error { background: #FEF2F2; border: 1px solid #FECACA; color: #DC2626; border-radius: 10px; padding: 10px 14px; font-size: 13px; margin-bottom: 16px; display: none; }
+  .success { background: #F0FDF4; border: 1px solid #BBF7D0; color: #16A34A; border-radius: 10px; padding: 10px 14px; font-size: 13px; margin-bottom: 16px; display: none; }
+  .loading { text-align: center; padding: 40px; color: #9CA3AF; font-size: 14px; }
+  .expired { text-align: center; padding: 40px; }
+  .expired h2 { font-size: 18px; margin-bottom: 8px; color: #DC2626; }
+  .expired p { font-size: 14px; color: #6B7280; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="card-top">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48c3ZnIGlkPSJ1dWlkLTgyM2YwZWRmLWNlYTMtNDQ4MS1iZDZmLWY3NjNhMDJkMmJmMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2aWV3Qm94PSIwIDAgMzE3LjQ4IDUxLjAyNCI+PGRlZnM+PHN0eWxlPi51dWlkLTk2MDMzZDg5LWZhOWUtNGVlNy05Y2ZhLTcxOWJmMjVmOWEzOHtmaWxsOiMxYmFmYzA7fS51dWlkLTU0NmUwYmU2LTBmNmYtNGRiNC1hODk5LTBmZTQ1ZGRmOTFjM3tmaWxsOiNmZmY7fTwvc3R5bGU+PC9kZWZzPjxwYXRoIGNsYXNzPSJ1dWlkLTk2MDMzZDg5LWZhOWUtNGVlNy05Y2ZhLTcxOWJmMjVmOWEzOCIgZD0iTTIuODkxLDQ5LjAwNVYxLjMxaDEzLjkyNnYyMi41NzJMMzEuMjAzLDEuMzFoMTUuMTY2bC0xNS4zMDcsMjIuMjE4LDE1Ljg3NSwyNS40NzdoLTE1LjUyMWwtMTQuNTk5LTI0LjM3OXYyNC4zNzlIMi44OTFaIi8+PHBhdGggY2xhc3M9InV1aWQtOTYwMzNkODktZmE5ZS00ZWU3LTljZmEtNzE5YmYyNWY5YTM4IiBkPSJNNTUuODk4LDQ5LjUwMWMtMy40MjUsMC02LjE4NC0xLjAwNC04LjI3NC0zLjAxMi0yLjA5MS0yLjAwOC0zLjEzNi01LjEzOC0zLjEzNi05LjM5VjE0LjMxNGgxMy4yMTZ2MjEuMTljMCwuODAzLjEzNiwxLjQ4My40MDgsMi4wMzguMjcyLjU1NS42NjguOTc1LDEuMTg3LDEuMjU4LjUxOS4yODQsMS4xNDYuNDI2LDEuODc4LjQyNiwxLjExLDAsMi4xNjctLjI4OSwzLjE3MS0uODY4LDEuMDA0LS41NzgsMS45NTQtMS40MTIsMi44NTMtMi40OThWMTQuMzE0aDEzLjIxNnYzNC42OTFoLTEyLjc1NmwtLjE0Mi00Ljk5N2MtMS4yMjgsMS41NTktMi43MzUsMi44NjUtNC41MTgsMy45MTYtMS43ODQsMS4wNTEtNC4xNTIsMS41NzYtNy4xMDUsMS41NzZaIi8+PHBhdGggY2xhc3M9InV1aWQtOTYwMzNkODktZmE5ZS00ZWU3LTljZmEtNzE5YmYyNWY5YTM4IiBkPSJNMTA0Ljk3Miw0OS42NDNjLTIuMDc3LDAtMy45MDktLjQyLTUuNDkyLTEuMjU4cy0zLjExOS0yLjE1Ni00LjYwNy0zLjk1MWwtLjM1Myw0LjU3MWgtMTIuMzMxVjEuMzFoMTMuMTgxdjE3LjUwNWMxLjI1Mi0xLjYwNiwyLjcxNi0yLjg0LDQuMzk0LTMuNzAzLDEuNjc3LS44NjIsMy42NzItMS4yOTQsNS45ODgtMS4yOTQsMi43NjQsMCw1LjE5OC42NDUsNy4zMDEsMS45MzEsMi4xMDEsMS4yODgsMy43NDQsMy4yNTUsNC45MjQsNS45czEuNzcyLDYuMDM2LDEuNzcyLDEwLjE2OWMwLDQuMDY0LS42NDQsNy40MTItMS45MzEsMTAuMDQ2LTEuMjg4LDIuNjM1LTMuMDQxLDQuNTg5LTUuMjYxLDUuODY1LTIuMjIyLDEuMjc2LTQuNzQ5LDEuOTE0LTcuNTg0LDEuOTE0Wk0xMDEuMjUyLDM5Ljg2M2MxLjYwNywwLDIuODkzLS42NjcsMy44NjMtMi4wMDIuOTY4LTEuMzM0LDEuNDUyLTMuNDMxLDEuNDUyLTYuMjksMC0yLjkyOC0uNDc3LTUuMDE0LTEuNDM1LTYuMjU0LS45NTYtMS4yNC0yLjI0OS0xLjg2MS0zLjg4LTEuODYxLTEuNTEyLDAtMi43ODcuNTAzLTMuODI3LDEuNTA3cy0xLjcyNCwxLjk1NC0yLjA1NSwyLjg1MnY3LjkwMmMuNTIuOTQ1LDEuMjU5LDEuODcyLDIuMjE1LDIuNzgyczIuMTc5LDEuMzY0LDMuNjY3LDEuMzY0WiIvPjxwYXRoIGNsYXNzPSJ1dWlkLTk2MDMzZDg5LWZhOWUtNGVlNy05Y2ZhLTcxOWJmMjVmOWEzOCIgZD0iTTE0MC4zMzMsNDkuNjQzYy0zLjYzOSwwLTYuODkxLS42MzgtOS43NjItMS45MTRzLTUuMTI3LTMuMjYtNi43NjctNS45NTNjLTEuNjQzLTIuNjkzLTIuNDYzLTYuMTQxLTIuNDYzLTEwLjM0NiwwLTMuODAzLjgwMi03LjAwNCwyLjQwOS05LjYwMywxLjYwNy0yLjU5OCwzLjgyMi00LjU3MSw2LjY0NS01LjkxNywyLjgyMS0xLjM0Niw2LjA0LTIuMDIsOS42NTUtMi4wMiw1LjYyMywwLDEwLjA5OCwxLjU2NSwxMy40Myw0LjY5NSwzLjMzMSwzLjEzMSw0Ljk5Niw3LjcwNyw0Ljk5NiwxMy43MzEsMCwuMjM2LS4wMTIuNTQ0LS4wMzQuOTIxLS4wMjUuMzc5LS4wNTkuNjk3LS4xMDcuOTU3aC0yMy44ODNjLjA0OCwxLjE1OC4yNzIsMi4yNDUuNjczLDMuMjYuNDAzLDEuMDE2LDEuMDQ2LDEuODMxLDEuOTMxLDIuNDQ1Ljg4Ny42MTQsMi4wNS45MjIsMy40OTEuOTIyLDEuNTU5LDAsMi44NTItLjI3OCwzLjg4LS44MzMsMS4wMjgtLjU1NSwxLjU3OC0xLjQ3LDEuNjQ4LTIuNzQ2aDEyLjI2MWMtLjE5LDMtMS4wNTgsNS40MDktMi42MDQsNy4yMjktMS41NDcsMS44MTktMy42MzksMy4xMzYtNi4yNzMsMy45NTEtMi42MzMuODE1LTUuNjc1LDEuMjIyLTkuMTIzLDEuMjIyWk0xMzQuNzM0LDI3LjEwN2gxMC43MDJjLS4xMTktMS43NDgtLjcwOC0zLTEuNzcyLTMuNzU3LTEuMDYzLS43NTYtMi4yNjgtMS4xMzQtMy42MTUtMS4xMzQtMS4zNzEsMC0yLjU1OC40Mi0zLjU2LDEuMjU4LTEuMDA2LjgzOS0xLjU5LDIuMDUtMS43NTUsMy42MzNaIi8+PHBhdGggY2xhc3M9InV1aWQtNTQ2ZTBiZTYtMGY2Zi00ZGI0LWE4OTktMGZlNDVkZGY5MWMzIiBkPSJNMTYwLjQ4Miw0OS4wMDVWMS4zMWgxMy40M2wxNy4xODUsMjYuMDc5VjEuMzFoMTMuMDc1djQ3LjY5NWgtMTMuMzU4bC0xNy4zMjgtMjYuMzk5djI2LjM5OWgtMTMuMDAzWiIvPjxwYXRoIGNsYXNzPSJ1dWlkLTU0NmUwYmU2LTBmNmYtNGRiNC1hODk5LTBmZTQ1ZGRmOTFjMyIgZD0iTTIyNC44NDYsNDkuNjQzYy0zLjYzOSwwLTYuODkzLS42MzgtOS43NjQtMS45MTQtMi44NjktMS4yNzYtNS4xMjctMy4yNi02Ljc2Ny01Ljk1My0xLjY0My0yLjY5My0yLjQ2My02LjE0MS0yLjQ2My0xMC4zNDYsMC0zLjgwMy44MDMtNy4wMDQsMi40MS05LjYwMywxLjYwNS0yLjU5OCwzLjgyLTQuNTcxLDYuNjQzLTUuOTE3czYuMDQyLTIuMDIsOS42NTctMi4wMmM1LjYyMSwwLDEwLjA5OCwxLjU2NSwxMy40Myw0LjY5NSwzLjMzMSwzLjEzMSw0Ljk5Niw3LjcwNyw0Ljk5NiwxMy43MzEsMCwuMjM2LS4wMTIuNTQ0LS4wMzYuOTIxLS4wMjQuMzc5LS4wNTkuNjk3LS4xMDUuOTU3aC0yMy44ODNjLjA0NiwxLjE1OC4yNywyLjI0NS42NzMsMy4yNi40MDEsMS4wMTYsMS4wNDUsMS44MzEsMS45MzEsMi40NDUuODg1LjYxNCwyLjA0OS45MjIsMy40OTEuOTIyLDEuNTU5LDAsMi44NTItLjI3OCwzLjg4LS44MzMsMS4wMjgtLjU1NSwxLjU3Ni0xLjQ3LDEuNjQ4LTIuNzQ2aDEyLjI2MWMtLjE5LDMtMS4wNTgsNS40MDktMi42MDYsNy4yMjlzLTMuNjM3LDMuMTM2LTYuMjcxLDMuOTUxYy0yLjYzNS44MTUtNS42NzUsMS4yMjItOS4xMjMsMS4yMjJaTTIxOS4yNDUsMjcuMTA3aDEwLjcwM2MtLjExOS0xLjc0OC0uNzEtMy0xLjc3Mi0zLjc1Ny0xLjA2My0uNzU2LTIuMjY5LTEuMTM0LTMuNjE1LTEuMTM0LTEuMzcxLDAtMi41NTguNDItMy41NjIsMS4yNTgtMS4wMDQuODM5LTEuNTg4LDIuMDUtMS43NTUsMy42MzNaIi8+PHBhdGggY2xhc3M9InV1aWQtNTQ2ZTBiZTYtMGY2Zi00ZGI0LWE4OTktMGZlNDVkZGY5MWMzIiBkPSJNMzAzLjc1MywxOS4wMDd2LTQuNjk3aC02LjU3NVY1LjgwNWgtMTMuMjJ2OC41MDZoLTUuNjcxdjEwLjAzNmg1LjY3MXYxMS42NTRjMCwzLjMyMi40ODcsNS45NDksMS40NzgsNy44MjcuOTkxLDEuODk2LDIuNjk2LDMuMjE4LDUuMTE0LDQuMDAxLDIuNC43ODMsNS43NCwxLjE4MywxMC4wMTksMS4xODNoMy4wNDR2LTYuODAxYy01LjMyMy0xLjE2NS05LjMwNi01LjkzMS05LjMwNi0xMS41ODQsMC01LjcyMyw0LjA1My0xMC41MDYsOS40NDUtMTEuNjE5WiIvPjxwYXRoIGNsYXNzPSJ1dWlkLTU0NmUwYmU2LTBmNmYtNGRiNC1hODk5LTBmZTQ1ZGRmOTFjMyIgZD0iTTI3Ni41MjEsMzIuNDc1Yy0uOTU2LTEuMzU4LTIuMzEtMi40MzItNC4wNTgtMy4yMjRzLTMuODM5LTEuNDgyLTYuMjcxLTIuMDczYy0yLjUyOC0uNjM4LTQuNDIzLTEuMTc1LTUuNjg3LTEuNjEycy0yLjA5Ni0uODItMi40OTktMS4xNTJjLS40MDEtLjMzLS42MDEtLjY1LS42MDEtLjk1NywwLS41MTkuMzA2LS45MDMuOTIxLTEuMTUxLjYxMy0uMjQ5LDEuNDY0LS4zNzMsMi41NTEtLjM3MywxLjA2MywwLDEuOTQ4LjIxMywyLjY1Ny42MzguNjUuMzg5Ljk4Ni45ODcsMS4wNDEsMS43NzJoMTEuOTg4Yy0uMDMtMi4wMDQtLjQ2My0zLjY4Ni0xLjMxNy01LjAzMS0uODg3LTEuMzk0LTIuMDc5LTIuNDkyLTMuNTc5LTMuMjk1LTEuNS0uODAzLTMuMTk1LTEuMzctNS4wODYtMS43MDEtMS44ODktLjMzLTMuODM5LS40OTYtNS44NDUtLjQ5Ni0xLjg2NywwLTMuNzM5LjE1NS01LjYxNy40NjEtMS44NzcuMzA3LTMuNTk2LjgzOC01LjE1NSwxLjU5NC0xLjU1OS43NTctMi44MTEsMS44MjUtMy43NTYsMy4yMDctLjk0NiwxLjM4Mi0xLjQxOCwzLjE1OS0xLjQxOCw1LjMzMywwLDIuMzg3LjYwOCw0LjMyOSwxLjgyNiw1LjgyOSwxLjIxNiwxLjUwMSwyLjgwNCwyLjY3NSw0Ljc2NSwzLjUyNiwxLjk2Mi44NSw0LjA2MywxLjUyNCw2LjMwOSwyLjAyLDMuMDQ3LjY4NSw1LjA1MywxLjI1Myw2LjAyMywxLjcwMS45NjguNDQ4LDEuNDUyLDEuMDc1LDEuNDUyLDEuODc4LDAsLjc1Ni0uNDAzLDEuMjgyLTEuMjA0LDEuNTc3LS44MDMuMjk2LTEuODA3LjQ0Mi0zLjAxMi40NDItMS4yNTQsMC0yLjI4Ni0uMTg5LTMuMTAyLS41NjctLjgxNC0uMzc4LTEuMjIxLTEuMTEtMS4yMjEtMi4xOTdsLjAxMi0xLjM4MmgtMTEuOTczbC0uMDE2LDEuMzgyYzAsMi4zMTUuNDQ4LDQuMTk5LDEuMzQ3LDUuNjUxLjg5NywxLjQ1MywyLjEyLDIuNTc1LDMuNjY3LDMuMzY3LDEuNTQ2Ljc5MiwzLjMsMS4zMzQsNS4yNjEsMS42MywxLjk2Mi4yOTUsNC4wMDUuNDQyLDYuMTMuNDQyLDIuMjQ0LDAsNC4zODMtLjIxMiw2LjQxNC0uNjM4LDIuMDMyLS40MjUsMy44MzItMS4wOTgsNS40MDMtMi4wMiwxLjU3MS0uOTIxLDIuODExLTIuMTIsMy43MjItMy41OTYuOTA5LTEuNDc2LDEuMzY0LTMuMjc4LDEuMzY0LTUuNDA0LDAtMi4zNjItLjQ3OS00LjIyMi0xLjQzNS01LjU4MVoiLz48cGF0aCBjbGFzcz0idXVpZC05NjAzM2Q4OS1mYTllLTRlZTctOWNmYS03MTliZjI1ZjlhMzgiIGQ9Ik0zMTQuNTksMzAuNjI3YzAsNC42NDQtMy43NTcsOC40MDEtOC40MDEsOC40MDFzLTguNDAxLTMuNzU3LTguNDAxLTguNDAxYzAtMi41MDUsMS4wOTYtNC43NDksMi44MTgtNi4yNzkuOTA0LS44LDEuOTY2LTEuNDA5LDMuMTQ4LTEuNzU3Ljc2NS0uMjQzLDEuNTgzLS4zNjUsMi40MzUtLjM2NSw0LjY0NCwwLDguNDAxLDMuNzU3LDguNDAxLDguNDAyWiIvPjwvc3ZnPg==" alt="KubeNest">
+    <h1>Workflow Mapper</h1>
+    <p id="subtitle">You've been invited to collaborate</p>
+  </div>
+  <div class="card-body">
+    <div id="loading" class="loading">Loading invitation details...</div>
+    <div id="expired" class="expired" style="display:none">
+      <h2>Invitation Expired</h2>
+      <p>This invite link is no longer valid. Please ask for a new one.</p>
+    </div>
+    <div id="main-content" style="display:none">
+      <div class="invite-info" id="invite-info">
+        <div class="client-name" id="client-name"></div>
+        <div class="invite-detail" id="invite-detail"></div>
+      </div>
+      <div id="already-accepted" style="display:none">
+        <div class="success" style="display:block">You've joined successfully! Redirecting...</div>
+      </div>
+      <div id="auth-section">
+        <div class="tabs">
+          <button class="tab active" id="tab-login" onclick="switchTab('login')">Sign In</button>
+          <button class="tab" id="tab-signup" onclick="switchTab('signup')">Create Account</button>
+        </div>
+        <div id="error-msg" class="error"></div>
+        <div id="success-msg" class="success"></div>
+        <form id="auth-form" onsubmit="handleSubmit(event)">
+          <div class="group">
+            <label class="label">Email Address</label>
+            <input class="field" type="email" id="email-field" placeholder="you@company.com" required>
+          </div>
+          <div class="group">
+            <label class="label">Password</label>
+            <input class="field" type="password" id="password-field" placeholder="Min 6 characters" required minlength="6">
+          </div>
+          <button class="btn-primary" type="submit" id="submit-btn">Sign In & Join</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const TOKEN_KEY = 'kn_token';
+const USER_KEY = 'kn_user';
+let mode = 'login';
+let inviteToken = null;
+let inviteData = null;
+
+// Get token from URL
+const params = new URLSearchParams(window.location.search);
+inviteToken = params.get('token');
+
+function switchTab(tab) {
+  mode = tab;
+  document.getElementById('tab-login').className = tab === 'login' ? 'tab active' : 'tab';
+  document.getElementById('tab-signup').className = tab === 'signup' ? 'tab active' : 'tab';
+  document.getElementById('submit-btn').textContent = tab === 'login' ? 'Sign In & Join' : 'Create Account & Join';
+  hideMessages();
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg; el.style.display = 'block';
+  document.getElementById('success-msg').style.display = 'none';
+}
+function showSuccess(msg) {
+  const el = document.getElementById('success-msg');
+  el.textContent = msg; el.style.display = 'block';
+  document.getElementById('error-msg').style.display = 'none';
+}
+function hideMessages() {
+  document.getElementById('error-msg').style.display = 'none';
+  document.getElementById('success-msg').style.display = 'none';
+}
+
+async function loadInvite() {
+  if (!inviteToken) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('expired').style.display = 'block';
+    return;
+  }
+  try {
+    const resp = await fetch('/api/invites?token=' + encodeURIComponent(inviteToken));
+    if (!resp.ok) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('expired').style.display = 'block';
+      return;
+    }
+    inviteData = await resp.json();
+    document.getElementById('client-name').textContent = inviteData.clientName;
+    document.getElementById('invite-detail').textContent = 'Invited by ' + inviteData.ownerEmail + ' to collaborate on workflows';
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('main-content').style.display = 'block';
+
+    // If already logged in, try to accept directly
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (token) {
+      await acceptInvite(token);
+    }
+  } catch (err) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('expired').style.display = 'block';
+  }
+}
+
+async function acceptInvite(token) {
+  try {
+    const resp = await fetch('/api/accept-invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ token: inviteToken })
+    });
+    const data = await resp.json();
+    if (resp.ok) {
+      // Store which shared client to show
+      localStorage.setItem('kn_pending_shared', JSON.stringify({
+        ownerId: data.ownerId,
+        clientId: data.clientId,
+        clientName: data.clientName
+      }));
+      document.getElementById('auth-section').style.display = 'none';
+      document.getElementById('already-accepted').style.display = 'block';
+      setTimeout(() => { window.location.href = '/index.html'; }, 1500);
+      return true;
+    }
+    if (data.error) showError(data.error);
+    return false;
+  } catch (err) {
+    showError('Failed to accept invite.');
+    return false;
+  }
+}
+
+async function handleSubmit(e) {
+  e.preventDefault();
+  hideMessages();
+  const email = document.getElementById('email-field').value.trim();
+  const password = document.getElementById('password-field').value;
+
+  if (!email || !password) { showError('Please fill in all fields.'); return; }
+  if (password.length < 6) { showError('Password must be at least 6 characters.'); return; }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true; btn.textContent = 'Please wait...';
+
+  try {
+    const endpoint = mode === 'signup' ? '/api/auth/signup' : '/api/auth/login';
+    const resp = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      showError(data.error || 'Something went wrong.');
+      btn.disabled = false;
+      btn.textContent = mode === 'login' ? 'Sign In & Join' : 'Create Account & Join';
+      return;
+    }
+
+    localStorage.setItem(TOKEN_KEY, data.token);
+    localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+
+    // Now accept the invite
+    showSuccess('Account ready! Joining ' + inviteData.clientName + '...');
+    await acceptInvite(data.token);
+  } catch (err) {
+    showError('Network error. Please check your connection.');
+    btn.disabled = false;
+    btn.textContent = mode === 'login' ? 'Sign In & Join' : 'Create Account & Join';
+  }
+}
+
+loadInvite();
+</script>
+</body>
+</html>
